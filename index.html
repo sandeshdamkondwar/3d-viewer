@@ -996,7 +996,7 @@ let pendingFileURL = null;
 function getModelSrc(animal) {
   if (modelBlobs[animal.id]) return modelBlobs[animal.id];
   if (modelURLs[animal.id]) return modelURLs[animal.id];
-  // Check if model file exists in ./models/ (when served locally)
+  if (animal.file) return `./models/${animal.file}`;
   return null;
 }
 
