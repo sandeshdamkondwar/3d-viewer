@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Animal Kingdom — 3D Explorer</title>
+
+  <!-- Google's model-viewer: handles GLB/glTF with AR, lighting, animations -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ───────── Design tokens ───────── */
+    :root {
+      --bg:           #0a0c0f;
+      --surface:      #111418;
+      --surface2:     #181d24;
+      --border:       rgba(255,255,255,0.07);
+      --accent:       #4dff91;
+      --accent2:      #00c9ff;
+      --accent3:      #ff6b35;
+      --text:         #e8ede8;
+      --muted:        #6b7a6b;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body:    'DM Sans', sans-serif;
+      --radius:       12px;
+      --card-w:       160px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated grain texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ───────── Layout ───────── */
+    .app {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100vh;
+    }
+
+    /* ───────── Header ───────── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10,12,15,0.85);
+    }
+
+    .logo {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: 28px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .logo-sub {
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-left: 4px;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .search-wrap {
+      position: relative;
+    }
+
+    .search-wrap svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    #search {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 13px;
+      padding: 8px 16px 8px 36px;
+      width: 220px;
+      outline: none;
+      transition: border-color 0.2s, width 0.3s;
+    }
+
+    #search:focus {
+      border-color: var(--accent);
+      width: 280px;
+    }
+
+    #search::placeholder { color: var(--muted); }
+
+    .btn-add {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 13px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-add:hover { opacity: 0.85; }
+    .btn-add:active { transform: scale(0.97); }
+
+    /* ───────── Main content ───────── */
+    main {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 73px);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      overflow-y: auto;
+    }
+
+    .sidebar-section {
+      margin-bottom: 28px;
+    }
+
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 24px;
+      margin-bottom: 10px;
+    }
+
+    .category-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 10px 24px;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      text-align: left;
+      border-left: 2px solid transparent;
+    }
+
+    .category-btn:hover {
+      background: var(--surface2);
+    }
+
+    .category-btn.active {
+      background: rgba(77,255,145,0.08);
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+
+    .category-btn .cat-icon { font-size: 18px; }
+    .category-btn .cat-count {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+
+    /* ── Animal grid ── */
+    .content {
+      padding: 28px 32px;
+      overflow-y: auto;
+    }
+
+    .content-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .content-title {
+      font-family: var(--font-display);
+      font-size: 40px;
+      letter-spacing: 1px;
+      line-height: 1;
+    }
+
+    .content-count {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .animal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(var(--card-w), 1fr));
+      gap: 16px;
+    }
+
+    .animal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      animation: fadeUp 0.4s ease both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .animal-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(77,255,145,0.06), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .animal-card:hover {
+      border-color: rgba(77,255,145,0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+
+    .animal-card:hover::before { opacity: 1; }
+
+    .animal-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent), 0 12px 40px rgba(77,255,145,0.15);
+    }
+
+    .card-emoji {
+      font-size: 40px;
+      display: block;
+      text-align: center;
+      margin-bottom: 12px;
+      line-height: 1;
+    }
+
+    .card-name {
+      font-family: var(--font-display);
+      font-size: 18px;
+      letter-spacing: 0.5px;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .card-latin {
+      font-size: 10px;
+      color: var(--muted);
+      text-align: center;
+      font-style: italic;
+      font-weight: 300;
+    }
+
+    .card-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 10px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .status-dot.loaded { background: var(--accent); }
+    .status-dot.missing { background: var(--accent3); }
+
+    .card-status.has-model { color: var(--accent); }
+    .card-status.no-model  { color: var(--muted); }
+
+    /* ───────── Viewer panel ───────── */
+    .viewer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+
+    .viewer-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .viewer-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      width: min(900px, 95vw);
+      height: min(620px, 90vh);
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      overflow: hidden;
+      box-shadow: 0 40px 120px rgba(0,0,0,0.8);
+      transform: scale(0.94);
+      transition: transform 0.25s;
+    }
+
+    .viewer-overlay.open .viewer-panel {
+      transform: scale(1);
+    }
+
+    /* model-viewer element */
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at center, #1a2535 0%, #0a0c0f 100%);
+      --poster-color: transparent;
+    }
+
+    .viewer-info {
+      background: var(--surface2);
+      border-left: 1px solid var(--border);
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .viewer-emoji {
+      font-size: 56px;
+      line-height: 1;
+    }
+
+    .viewer-name {
+      font-family: var(--font-display);
+      font-size: 42px;
+      letter-spacing: 1px;
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .viewer-latin {
+      font-size: 12px;
+      color: var(--muted);
+      font-style: italic;
+      font-weight: 300;
+      margin-top: -8px;
+    }
+
+    .viewer-desc {
+      font-size: 13px;
+      line-height: 1.7;
+      color: rgba(232,237,232,0.75);
+      font-weight: 300;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .info-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .info-chip-label {
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .info-chip-value {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .viewer-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .ctrl-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .ctrl-btn:hover {
+      background: var(--surface2);
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    .ctrl-btn.primary {
+      background: rgba(77,255,145,0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .ctrl-btn.primary:hover {
+      background: rgba(77,255,145,0.18);
+    }
+
+    .btn-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.15s;
+      z-index: 10;
+    }
+    .btn-close:hover { background: var(--surface); }
+
+    /* ── Add custom model modal ── */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: min(480px, 90vw);
+      padding: 32px;
+    }
+
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .modal-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus { border-color: var(--accent); }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+      justify-content: flex-end;
+    }
+
+    .btn-cancel {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .btn-cancel:hover { border-color: rgba(255,255,255,0.2); }
+
+    .btn-submit {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 13px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-submit:hover { opacity: 0.85; }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 16px;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(77,255,145,0.04);
+    }
+    .drop-zone p { font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .drop-zone strong { color: var(--text); }
+
+    /* ── No model placeholder ── */
+    .no-model-msg {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 32px;
+      text-align: center;
+    }
+    .no-model-msg .big { font-size: 48px; margin-bottom: 4px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
+    /* ── Hamburger button ── */
+    .menu-btn {
+      display: none;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    /* ── Sidebar overlay backdrop ── */
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 90;
+    }
+
+    .sidebar-backdrop.open { display: block; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .menu-btn { display: flex; }
+
+      /* ── Compact header ── */
+      header {
+        padding: 12px 16px;
+        gap: 8px;
+      }
+
+      .logo-text { font-size: 20px; letter-spacing: 1px; }
+      .logo-sub  { display: none; }
+      .logo-icon { font-size: 22px; }
+
+      /* Search expands to fill available width */
+      .header-right { gap: 8px; flex: 1; justify-content: flex-end; }
+
+      #search {
+        width: 36px;
+        padding: 8px 10px 8px 10px;
+        border-radius: 999px;
+        transition: width 0.3s, padding 0.3s, border-color 0.2s;
+        cursor: pointer;
+      }
+
+      /* Hide placeholder text + icon when collapsed */
+      #search::placeholder { color: transparent; }
+      .search-wrap svg { opacity: 0; transition: opacity 0.2s; }
+
+      /* When focused: expand fully */
+      #search:focus {
+        width: min(200px, 55vw);
+        padding: 8px 14px 8px 34px;
+        cursor: text;
+      }
+      #search:focus::placeholder { color: var(--muted); }
+      #search:focus ~ svg,
+      .search-wrap:focus-within svg { opacity: 1; }
+
+      /* Show search icon always, just shift it inside */
+      .search-wrap { display: flex; align-items: center; }
+      .search-wrap::after {
+        content: '🔍';
+        position: absolute;
+        left: 10px;
+        font-size: 13px;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+      .search-wrap:focus-within::after { display: none; }
+
+      /* "+ Add Model" → compact icon button */
+      .btn-add {
+        padding: 8px 10px;
+        font-size: 18px;
+        border-radius: 8px;
+        line-height: 1;
+      }
+      .btn-add-label { display: none; }
+
+      main { grid-template-columns: 1fr; }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        background: var(--bg);
+        border-right: 1px solid var(--border);
+        z-index: 95;
+        transform: translateX(-100%);
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        padding-top: 64px;
+        overflow-y: auto;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 8px 0 40px rgba(0,0,0,0.5);
+      }
+
+      .content { padding: 20px 16px; }
+      .content-title { font-size: 28px; }
+
+      .viewer-panel { grid-template-columns: 1fr; }
+      .viewer-info { display: none; }
+    }
+
+    @media (max-width: 400px) {
+      .logo-text { font-size: 16px; }
+      #search:focus { width: min(160px, 45vw); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Header ── -->
+  <!-- Sidebar backdrop for mobile -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
+  <header>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="menu-btn" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
+      <div class="logo">
+        <span class="logo-icon">🦁</span>
+        <div>
+          <div class="logo-text">ANIMAL KINGDOM</div>
+          <div class="logo-sub">3D Explorer</div>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" id="search" placeholder="Search animals…" />
+      </div>
+      <button class="btn-add" onclick="openModal()">+<span class="btn-add-label"> Add Model</span></button>
+    </div>
+  </header>
+
+  <!-- ── Main ── -->
+  <main>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Categories</div>
+        <button class="category-btn active" data-cat="all">
+          <span class="cat-icon">🌍</span> All Animals
+          <span class="cat-count" id="count-all">0</span>
+        </button>
+        <button class="category-btn" data-cat="mammals">
+          <span class="cat-icon">🦁</span> Mammals
+          <span class="cat-count" id="count-mammals">0</span>
+        </button>
+        <button class="category-btn" data-cat="birds">
+          <span class="cat-icon">🦅</span> Birds
+          <span class="cat-count" id="count-birds">0</span>
+        </button>
+        <button class="category-btn" data-cat="reptiles">
+          <span class="cat-icon">🦎</span> Reptiles
+          <span class="cat-count" id="count-reptiles">0</span>
+        </button>
+        <button class="category-btn" data-cat="aquatic">
+          <span class="cat-icon">🐠</span> Aquatic
+          <span class="cat-count" id="count-aquatic">0</span>
+        </button>
+        <button class="category-btn" data-cat="insects">
+          <span class="cat-icon">🦋</span> Insects
+          <span class="cat-count" id="count-insects">0</span>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Load Models</div>
+        <button class="category-btn" onclick="openModal()">
+          <span class="cat-icon">📂</span> From File (.glb)
+        </button>
+        <button class="category-btn" onclick="openModal('url')">
+          <span class="cat-icon">🔗</span> From URL
+        </button>
+        <button class="category-btn" onclick="loadSampleModels()">
+          <span class="cat-icon">✨</span> Load Samples
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Help</div>
+        <button class="category-btn" onclick="showDownloadGuide()">
+          <span class="cat-icon">⬇️</span> Download Guide
+        </button>
+      </div>
+    </aside>
+
+    <!-- Animal grid -->
+    <div class="content">
+      <div class="content-header">
+        <h1 class="content-title" id="category-title">ALL ANIMALS</h1>
+        <span class="content-count" id="visible-count">0 animals</span>
+      </div>
+      <div class="animal-grid" id="animal-grid"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ── 3D Viewer Overlay ── -->
+<div class="viewer-overlay" id="viewer-overlay" onclick="closeViewer(event)">
+  <div class="viewer-panel">
+    <div id="viewer-container">
+      <!-- model-viewer or placeholder injected here -->
+    </div>
+    <div class="viewer-info">
+      <div>
+        <div class="viewer-emoji" id="info-emoji">🦁</div>
+        <div class="viewer-name" id="info-name">Lion</div>
+        <div class="viewer-latin" id="info-latin">Panthera leo</div>
+      </div>
+      <p class="viewer-desc" id="info-desc">Loading description…</p>
+      <div class="info-grid" id="info-grid"></div>
+      <div class="viewer-controls">
+        <button class="ctrl-btn primary" id="btn-ar" onclick="launchAR()">
+          📱 View in AR
+        </button>
+        <button class="ctrl-btn" onclick="toggleAnimation()">
+          ▶ Play Animation
+        </button>
+        <button class="ctrl-btn" onclick="resetCamera()">
+          ↩ Reset Camera
+        </button>
+      </div>
+    </div>
+    <button class="btn-close" onclick="closeViewer()">✕</button>
+  </div>
+</div>
+
+<!-- ── Add Model Modal ── -->
+<div class="modal" id="add-modal">
+  <div class="modal-box">
+    <div class="modal-title">ADD ANIMAL MODEL</div>
+    <div class="modal-sub">Load a GLB or glTF file to add it to your collection</div>
+
+    <!-- File drop zone -->
+    <div class="drop-zone" id="drop-zone"
+         ondragover="event.preventDefault(); this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="handleDrop(event)"
+         onclick="document.getElementById('file-input').click()">
+      <div style="font-size:32px">📦</div>
+      <strong>Drop .glb / .gltf file here</strong>
+      <p>or click to browse</p>
+    </div>
+    <input type="file" id="file-input" accept=".glb,.gltf" style="display:none" onchange="handleFileSelect(event)" />
+
+    <div class="form-group">
+      <label class="form-label">Animal Name</label>
+      <input type="text" id="modal-name" class="form-input" placeholder="e.g. Lion" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Or paste GLB URL</label>
+      <input type="text" id="modal-url" class="form-input" placeholder="https://…/model.glb" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <select id="modal-cat" class="form-input">
+        <option value="mammals">Mammals</option>
+        <option value="birds">Birds</option>
+        <option value="reptiles">Reptiles</option>
+        <option value="aquatic">Aquatic</option>
+        <option value="insects">Insects</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-submit" onclick="addCustomAnimal()">Add Animal</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// ANIMAL DATABASE
+// ─────────────────────────────────────────────────────────────────────────────
+const ANIMALS = [
+  // MAMMALS
+  { id: 'lion',      name: 'Lion',       emoji: '🦁', latin: 'Panthera leo',        cat: 'mammals',  file: 'lion.glb',      desc: 'The apex predator of the African savanna, known for its majestic mane and powerful roar audible up to 8 km away.',      info: { Habitat: 'Savanna', Weight: '190 kg', Lifespan: '12 yrs', Status: 'Vulnerable' } },
+  { id: 'elephant',  name: 'Elephant',   emoji: '🐘', latin: 'Loxodonta africana',  cat: 'mammals',  file: 'elephant.glb',  desc: "Earth's largest land animal, with a remarkable memory and complex social structures built around matriarchal herds.",    info: { Habitat: 'Grassland', Weight: '5,400 kg', Lifespan: '70 yrs', Status: 'Vulnerable' } },
+  { id: 'giraffe',   name: 'Giraffe',    emoji: '🦒', latin: 'Giraffa camelopardalis', cat: 'mammals', file: 'giraffe.glb', desc: 'The world\'s tallest living terrestrial animal, using its long neck to feed on treetops unreachable by other herbivores.',  info: { Habitat: 'Savanna', Weight: '1,200 kg', Lifespan: '25 yrs', Status: 'Vulnerable' } },
+  { id: 'tiger',     name: 'Tiger',      emoji: '🐯', latin: 'Panthera tigris',     cat: 'mammals',  file: 'tiger.glb',     desc: 'The largest wild cat species, with distinctive orange fur and black stripes that act as camouflage in dense undergrowth.', info: { Habitat: 'Forest', Weight: '300 kg', Lifespan: '26 yrs', Status: 'Endangered' } },
+  { id: 'bear',      name: 'Bear',       emoji: '🐻', latin: 'Ursus arctos',        cat: 'mammals',  file: 'bear.glb',      desc: 'Among the most widespread large land animals, capable of reaching speeds of 56 km/h despite their massive frame.',       info: { Habitat: 'Forest', Weight: '360 kg', Lifespan: '30 yrs', Status: 'Least Concern' } },
+  { id: 'wolf',      name: 'Wolf',       emoji: '🐺', latin: 'Canis lupus',         cat: 'mammals',  file: 'wolf.glb',      desc: 'Highly social apex predators that live in family packs, using complex vocalizations and body language to communicate.',   info: { Habitat: 'Boreal', Weight: '43 kg', Lifespan: '14 yrs', Status: 'Least Concern' } },
+  { id: 'fox',       name: 'Fox',        emoji: '🦊', latin: 'Vulpes vulpes',       cat: 'mammals',  file: 'fox.glb',       desc: 'The most widely distributed wild canid in the world, renowned for its cunning intelligence and adaptability to diverse environments.', info: { Habitat: 'Various', Weight: '7 kg', Lifespan: '10 yrs', Status: 'Least Concern' } },
+  { id: 'panda',     name: 'Panda',      emoji: '🐼', latin: 'Ailuropoda melanoleuca', cat: 'mammals', file: 'panda.glb',  desc: 'A living symbol of conservation, the giant panda consumes up to 38 kg of bamboo per day due to its inefficient digestion.', info: { Habitat: 'Mountains', Weight: '120 kg', Lifespan: '20 yrs', Status: 'Vulnerable' } },
+  { id: 'gorilla',   name: 'Gorilla',    emoji: '🦍', latin: 'Gorilla beringei',    cat: 'mammals',  file: 'gorilla.glb',   desc: 'Our closest living relatives after chimpanzees, gorillas share 98.3% of their DNA with humans and display remarkable intelligence.', info: { Habitat: 'Rainforest', Weight: '200 kg', Lifespan: '40 yrs', Status: 'Critically Endangered' } },
+  { id: 'zebra',     name: 'Zebra',      emoji: '🦓', latin: 'Equus quagga',        cat: 'mammals',  file: 'zebra.glb',     desc: 'No two zebras have the same stripe pattern — their stripes are as unique as human fingerprints and may help with thermoregulation.', info: { Habitat: 'Savanna', Weight: '350 kg', Lifespan: '25 yrs', Status: 'Near Threatened' } },
+  { id: 'deer',      name: 'Deer',       emoji: '🦌', latin: 'Cervus elaphus',      cat: 'mammals',  file: 'deer.glb',      desc: 'Male deer grow and shed their antlers annually — the fastest growing tissue of any mammal, capable of adding 2.5 cm per day.', info: { Habitat: 'Forest', Weight: '240 kg', Lifespan: '20 yrs', Status: 'Least Concern' } },
+  { id: 'horse',     name: 'Horse',      emoji: '🐎', latin: 'Equus ferus caballus', cat: 'mammals', file: 'horse.glb',     desc: 'Domesticated over 5,000 years ago, horses have co-evolved with humans and can sleep both standing up and lying down.',         info: { Habitat: 'Grassland', Weight: '500 kg', Lifespan: '30 yrs', Status: 'Domesticated' } },
+  { id: 'rabbit',    name: 'Rabbit',     emoji: '🐇', latin: 'Oryctolagus cuniculus', cat: 'mammals', file: 'rabbit.glb',  desc: 'Rabbits have nearly 360° panoramic vision to detect predators from all directions, with a nearly complete blind spot only directly in front.', info: { Habitat: 'Various', Weight: '2.5 kg', Lifespan: '12 yrs', Status: 'Least Concern' } },
+  // BIRDS
+  { id: 'eagle',     name: 'Eagle',      emoji: '🦅', latin: 'Aquila chrysaetos',   cat: 'birds',    file: 'eagle.glb',     desc: 'With eyesight 4–8× sharper than humans, eagles can spot prey from over 3 km away while soaring at altitude.',              info: { Habitat: 'Mountains', Weight: '6.5 kg', Wingspan: '2.1 m', Status: 'Least Concern' } },
+  { id: 'owl',       name: 'Owl',        emoji: '🦉', latin: 'Strix nebulosa',      cat: 'birds',    file: 'owl.glb',       desc: 'Owls can rotate their heads up to 270° and have asymmetrical ears to pinpoint sounds with extraordinary 3D precision.',     info: { Habitat: 'Forest', Weight: '1.3 kg', Wingspan: '1.4 m', Status: 'Least Concern' } },
+  { id: 'flamingo',  name: 'Flamingo',   emoji: '🦩', latin: 'Phoenicopterus roseus', cat: 'birds', file: 'flamingo.glb',   desc: 'Flamingos are born white — their iconic pink color comes entirely from carotenoid pigments in the algae and crustaceans they eat.', info: { Habitat: 'Wetlands', Weight: '3.5 kg', Wingspan: '1.4 m', Status: 'Least Concern' } },
+  { id: 'parrot',    name: 'Parrot',     emoji: '🦜', latin: 'Psittacus erithacus', cat: 'birds',    file: 'parrot.glb',    desc: 'African grey parrots have demonstrated an ability to understand concepts like zero, and can learn vocabularies of 1,000+ words.', info: { Habitat: 'Rainforest', Weight: '0.5 kg', Wingspan: '0.6 m', Status: 'Endangered' } },
+  { id: 'penguin',   name: 'Penguin',    emoji: '🐧', latin: 'Aptenodytes forsteri', cat: 'birds', file: 'penguin.glb',     desc: 'Emperor penguins can dive up to 565 m and hold their breath for over 20 minutes — deeper than any other bird species.',     info: { Habitat: 'Antarctica', Weight: '40 kg', Speed: '25 km/h', Status: 'Near Threatened' } },
+  // REPTILES
+  { id: 'crocodile', name: 'Crocodile',  emoji: '🐊', latin: 'Crocodylus niloticus', cat: 'reptiles', file: 'crocodile.glb', desc: 'Crocodiles have survived virtually unchanged for 200 million years and are more closely related to birds than to lizards or snakes.', info: { Habitat: 'Rivers', Weight: '750 kg', Length: '5.5 m', Status: 'Least Concern' } },
+  { id: 'turtle',    name: 'Sea Turtle', emoji: '🐢', latin: 'Chelonia mydas',      cat: 'reptiles', file: 'turtle.glb',    desc: 'Sea turtles navigate using Earth\'s magnetic field as a GPS compass and can travel thousands of km to return to their birth beach.', info: { Habitat: 'Ocean', Weight: '180 kg', Lifespan: '80 yrs', Status: 'Endangered' } },
+  { id: 'snake',     name: 'Snake',      emoji: '🐍', latin: 'Python reticulatus',  cat: 'reptiles', file: 'snake.glb',     desc: 'The reticulated python is the world\'s longest snake, capable of reaching 8 m in length and swallowing prey whole.',         info: { Habitat: 'Forest', Weight: '160 kg', Length: '8 m', Status: 'Least Concern' } },
+  // AQUATIC
+  { id: 'shark',     name: 'Shark',      emoji: '🦈', latin: 'Carcharodon carcharias', cat: 'aquatic', file: 'shark.glb',  desc: 'Great white sharks have existed for 16 million years — they can detect one drop of blood in 100 liters of water from 5 km away.', info: { Habitat: 'Ocean', Weight: '1,100 kg', Speed: '56 km/h', Status: 'Vulnerable' } },
+  { id: 'whale',     name: 'Blue Whale', emoji: '🐋', latin: 'Balaenoptera musculus', cat: 'aquatic', file: 'whale.glb',   desc: 'The largest animal ever to have lived on Earth — a blue whale\'s heart alone weighs 180 kg and beats just 8 times per minute.', info: { Habitat: 'Ocean', Weight: '200,000 kg', Length: '30 m', Status: 'Endangered' } },
+  { id: 'octopus',   name: 'Octopus',    emoji: '🐙', latin: 'Octopus vulgaris',    cat: 'aquatic',  file: 'octopus.glb',   desc: 'Octopuses have three hearts, blue blood, and distributed intelligence — two-thirds of their neurons are in their eight arms.',  info: { Habitat: 'Ocean', Weight: '10 kg', Lifespan: '5 yrs', Status: 'Least Concern' } },
+  { id: 'dolphin',   name: 'Dolphin',    emoji: '🐬', latin: 'Tursiops truncatus',  cat: 'aquatic',  file: 'dolphin.glb',   desc: 'Bottlenose dolphins use unique signature whistles as names for each other and demonstrate self-recognition in mirrors.',       info: { Habitat: 'Ocean', Weight: '300 kg', Speed: '55 km/h', Status: 'Least Concern' } },
+  { id: 'jellyfish', name: 'Jellyfish',  emoji: '🪼', latin: 'Aurelia aurita',      cat: 'aquatic',  file: 'jellyfish.glb', desc: 'Jellyfish are 95% water, have no brain, heart, or blood, yet some species are considered biologically immortal.',            info: { Habitat: 'Ocean', Weight: '2 kg', Lifespan: '1 yr', Status: 'Least Concern' } },
+  // INSECTS
+  { id: 'butterfly', name: 'Butterfly',  emoji: '🦋', latin: 'Danaus plexippus',    cat: 'insects',  file: 'butterfly.glb', desc: 'Monarch butterflies migrate up to 4,800 km annually and can navigate using the sun\'s position and Earth\'s magnetic field.', info: { Habitat: 'Various', Weight: '0.3 g', Wingspan: '10 cm', Status: 'Endangered' } },
+  { id: 'bee',       name: 'Honey Bee',  emoji: '🐝', latin: 'Apis mellifera',      cat: 'insects',  file: 'bee.glb',       desc: 'A single honey bee will visit 1,500 flowers to make one teaspoon of honey and can communicate location through the waggle dance.', info: { Habitat: 'Various', Weight: '0.1 g', Speed: '25 km/h', Status: 'Near Threatened' } },
+  { id: 'trex',      name: 'T-Rex',      emoji: '🦖', latin: 'Tyrannosaurus rex',   cat: 'reptiles', file: 'trex.glb',      desc: 'Tyrannosaurus rex had the most powerful bite force of any land animal in history — roughly 57,000 newtons, enough to crush bone.', info: { Habitat: 'Prehistoric', Weight: '9,000 kg', Length: '12 m', Status: 'Extinct' } },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+let currentCat = 'all';
+let currentAnimal = null;
+let modelBlobs = {};          // id → blob URL (for user-uploaded files)
+let modelURLs = {};           // id → external URL
+let currentViewer = null;
+let pendingFile = null;
+let pendingFileURL = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────────────────────────────
+function getModelSrc(animal) {
+  if (modelBlobs[animal.id]) return modelBlobs[animal.id];
+  if (modelURLs[animal.id]) return modelURLs[animal.id];
+  // Check if model file exists in ./models/ (when served locally)
+  return null;
+}
+
+function hasModel(animal) {
+  return !!getModelSrc(animal);
+}
+
+function renderGrid() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const grid = document.getElementById('animal-grid');
+  const visible = ANIMALS.filter(a => {
+    if (currentCat !== 'all' && a.cat !== currentCat) return false;
+    if (search && !a.name.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  grid.innerHTML = visible.map((a, i) => `
+    <div class="animal-card ${currentAnimal?.id === a.id ? 'active' : ''}"
+         onclick="openAnimal('${a.id}')"
+         style="animation-delay:${i * 0.03}s">
+      <span class="card-emoji">${a.emoji}</span>
+      <div class="card-name">${a.name}</div>
+      <div class="card-latin">${a.latin}</div>
+      <div class="card-status ${hasModel(a) ? 'has-model' : 'no-model'}">
+        <div class="status-dot ${hasModel(a) ? 'loaded' : 'missing'}"></div>
+        ${hasModel(a) ? '3D Ready' : 'No model'}
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('visible-count').textContent = `${visible.length} animals`;
+
+  // Update sidebar counts
+  document.getElementById('count-all').textContent = ANIMALS.length;
+  ['mammals','birds','reptiles','aquatic','insects'].forEach(cat => {
+    document.getElementById(`count-${cat}`).textContent = ANIMALS.filter(a => a.cat === cat).length;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VIEWER
+// ─────────────────────────────────────────────────────────────────────────────
+function openAnimal(id) {
+  const animal = ANIMALS.find(a => a.id === id);
+  if (!animal) return;
+  currentAnimal = animal;
+
+  const overlay = document.getElementById('viewer-overlay');
+  const container = document.getElementById('viewer-container');
+
+  // Fill info panel
+  document.getElementById('info-emoji').textContent = animal.emoji;
+  document.getElementById('info-name').textContent = animal.name.toUpperCase();
+  document.getElementById('info-latin').textContent = animal.latin;
+  document.getElementById('info-desc').textContent = animal.desc;
+
+  const infoGrid = document.getElementById('info-grid');
+  infoGrid.innerHTML = Object.entries(animal.info).map(([k,v]) => `
+    <div class="info-chip">
+      <div class="info-chip-label">${k}</div>
+      <div class="info-chip-value">${v}</div>
+    </div>
+  `).join('');
+
+  const src = getModelSrc(animal);
+
+  if (src) {
+    container.innerHTML = `
+      <model-viewer id="mv"
+        src="${src}"
+        alt="${animal.name} 3D model"
+        auto-rotate
+        camera-controls
+        shadow-intensity="1"
+        exposure="1"
+        ar ar-modes="webxr scene-viewer quick-look"
+        style="width:100%;height:100%">
+      </model-viewer>`;
+    currentViewer = document.getElementById('mv');
+  } else {
+    container.innerHTML = `
+      <div class="no-model-msg">
+        <div class="big">${animal.emoji}</div>
+        <strong>No 3D model loaded</strong>
+        <p>Drop a .glb file here or use<br>"Add Model" to load one</p>
+        <button class="ctrl-btn" style="width:auto;margin-top:8px" onclick="closeViewer();openModal()">
+          📂 Load GLB File
+        </button>
+      </div>`;
+    currentViewer = null;
+  }
+
+  overlay.classList.add('open');
+  renderGrid(); // update active card
+}
+
+function closeViewer(e) {
+  if (e && e.target !== document.getElementById('viewer-overlay')) return;
+  document.getElementById('viewer-overlay').classList.remove('open');
+  currentAnimal = null;
+  renderGrid();
+}
+
+function toggleAnimation() {
+  if (!currentViewer) return;
+  if (currentViewer.paused) {
+    currentViewer.play({ repetitions: Infinity });
+  } else {
+    currentViewer.pause();
+  }
+}
+
+function resetCamera() {
+  if (!currentViewer) return;
+  currentViewer.resetTurntableRotation();
+  currentViewer.jumpCameraToGoal();
+}
+
+function launchAR() {
+  if (!currentViewer) return;
+  currentViewer.activateAR();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CATEGORY FILTER
+// ─────────────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.category-btn[data-cat]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.category-btn[data-cat]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCat = btn.dataset.cat;
+    const titles = {all:'ALL ANIMALS', mammals:'MAMMALS', birds:'BIRDS', reptiles:'REPTILES', aquatic:'AQUATIC', insects:'INSECTS'};
+    document.getElementById('category-title').textContent = titles[currentCat] || 'ANIMALS';
+    renderGrid();
+  });
+});
+
+document.getElementById('search').addEventListener('input', renderGrid);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADD MODEL MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+function openModal(mode) {
+  document.getElementById('add-modal').classList.add('open');
+  if (mode === 'url') {
+    document.getElementById('modal-url').focus();
+  }
+}
+
+function closeModal() {
+  document.getElementById('add-modal').classList.remove('open');
+  document.getElementById('modal-name').value = '';
+  document.getElementById('modal-url').value = '';
+  pendingFile = null;
+  pendingFileURL = null;
+  document.getElementById('drop-zone').innerHTML = `
+    <div style="font-size:32px">📦</div>
+    <strong>Drop .glb / .gltf file here</strong>
+    <p>or click to browse</p>`;
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  if (!file.name.match(/\.(glb|gltf)$/i)) {
+    alert('Please select a .glb or .gltf file');
+    return;
+  }
+  pendingFile = file;
+  pendingFileURL = URL.createObjectURL(file);
+  // Auto-fill name from filename
+  const nameGuess = file.name.replace(/\.(glb|gltf)$/i, '').replace(/[-_]/g, ' ');
+  if (!document.getElementById('modal-name').value) {
+    document.getElementById('modal-name').value = nameGuess;
+  }
+  document.getElementById('drop-zone').innerHTML = `
+    <div style="font-size:32px">✅</div>
+    <strong>${file.name}</strong>
+    <p>${(file.size/1024).toFixed(0)} KB loaded</p>`;
+}
+
+function addCustomAnimal() {
+  const name = document.getElementById('modal-name').value.trim();
+  const url = document.getElementById('modal-url').value.trim();
+  const cat = document.getElementById('modal-cat').value;
+
+  if (!name) { alert('Please enter an animal name'); return; }
+
+  const src = pendingFileURL || url;
+  if (!src) { alert('Please provide a .glb file or URL'); return; }
+
+  const id = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+  const emojis = { mammals:'🦁', birds:'🦅', reptiles:'🦎', aquatic:'🐠', insects:'🦋' };
+
+  // Check if updating existing animal
+  const existing = ANIMALS.find(a => a.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    if (pendingFileURL) modelBlobs[existing.id] = pendingFileURL;
+    else modelURLs[existing.id] = url;
+    closeModal();
+    renderGrid();
+    openAnimal(existing.id);
+    return;
+  }
+
+  // Add new animal
+  const newAnimal = {
+    id, name, emoji: emojis[cat] || '🐾',
+    latin: 'Custom model',
+    cat,
+    file: pendingFile?.name || url.split('/').pop(),
+    desc: `Custom 3D model: ${name}`,
+    info: { Source: 'Custom', Format: 'GLB/glTF' }
+  };
+
+  ANIMALS.push(newAnimal);
+  if (pendingFileURL) modelBlobs[id] = pendingFileURL;
+  else modelURLs[id] = url;
+
+  closeModal();
+  renderGrid();
+  openAnimal(id);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SAMPLE MODELS (online GLBs for demo)
+// ─────────────────────────────────────────────────────────────────────────────
+function loadSampleModels() {
+  const samples = [
+    { id: 'fox', url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Fox/glTF-Binary/Fox.glb' },
+    { id: 'duck', url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Duck/glTF-Binary/Duck.glb' },
+  ];
+
+  samples.forEach(s => {
+    modelURLs[s.id] = s.url;
+  });
+
+  renderGrid();
+  alert('✓ Sample models linked! Click "Fox" or "Duck" to view them.\n\nNote: These require internet access to load.');
+}
+
+function showDownloadGuide() {
+  alert(
+`📦 HOW TO ADD ANIMAL MODELS
+
+OPTION 1 — Quaternius Pack (BEST — 100+ animals, free CC0)
+  1. Go to: quaternius.itch.io/ultimate-animal-pack
+  2. Click "Download Now" → enter $0
+  3. Unzip the pack → find .glb files
+  4. Drag & drop each .glb into this viewer!
+
+OPTION 2 — Poly.pizza (CC0, no login needed)
+  1. Go to: poly.pizza
+  2. Search for any animal
+  3. Click "Download" → choose GLB format
+  4. Drag & drop into this viewer!
+
+OPTION 3 — Load from URL
+  Click "Add Model" → paste a .glb URL
+
+OPTION 4 — Run the download script
+  python3 download_animal_models.py
+  Then serve locally: python3 -m http.server 8000`
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KEYBOARD
+// ─────────────────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeViewer();
+    closeModal();
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIDEBAR TOGGLE (mobile)
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const isOpen = sidebar.classList.toggle('open');
+  backdrop.classList.toggle('open', isOpen);
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+// Close sidebar when a category is picked on mobile
+document.querySelectorAll('.category-btn[data-cat]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (window.innerWidth <= 768) toggleSidebar();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+renderGrid();
+</script>
+</body>
+</html>
