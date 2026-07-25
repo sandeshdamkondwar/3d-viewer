@@ -41,102 +41,37 @@ TIMEOUT = 60
 # Copy the UID from the model URL: sketchfab.com/3d-models/lion-{UID}
 # ─────────────────────────────────────────────────────────────────────────────
 CURATED_MODELS = [
-    # name           sketchfab_uid                      output_filename
-    # ── Big Cats ──
-    ("Lion",         "6ea8b9f8fc9e48d49b4c56ed8e6a4aee", "lion.glb"),
-    ("Tiger",        "f2a12de0b7ef4c6c9c96d7e0f76ada2e", "tiger.glb"),
-    ("Cheetah",      "c2d7b3c3d0d54e2d9fba53eaef6a8e2d", "cheetah.glb"),
-    ("Leopard",      "e13e83c7c0c7466db9f7f6a0e7e0e3b5", "leopard.glb"),
-    ("Jaguar",       "b0c6e9a2f15f4ac395c4d0a3e2b1c8f7", "jaguar.glb"),
-
-    # ── African Savanna ──
-    ("Elephant",     "3b0ef9a1c9d4428f9b5e2e6f8c4d3a2b", "elephant.glb"),
-    ("Giraffe",      "7c1d5e8f2b3a4c6d9e0f1a2b3c4d5e6f", "giraffe.glb"),
-    ("Zebra",        "a1b2c3d4e5f6789012345678901234ab", "zebra.glb"),
-    ("Hippo",        "1a2b3c4d5e6f7890abcdef1234567890", "hippo.glb"),
-    ("Rhino",        "f0e1d2c3b4a596870123456789abcdef", "rhino.glb"),
-
-    # ── Bears & Canids ──
-    ("Grizzly Bear", "d4c3b2a1f0e9d8c7b6a5948372615049", "bear.glb"),
-    ("Wolf",         "a9b8c7d6e5f4031201fedcba98765432", "wolf.glb"),
-    ("Arctic Fox",   "1234567890abcdef1234567890abcdef", "fox.glb"),
-
-    # ── Primates ──
-    ("Gorilla",      "abcdef1234567890abcdef1234567890", "gorilla.glb"),
-    ("Orangutan",    "fedcba0987654321fedcba0987654321", "orangutan.glb"),
-
-    # ── Ocean ──
-    ("Great White Shark", "0123456789abcdef0123456789abcdef", "shark.glb"),
-    ("Blue Whale",   "9876543210fedcba9876543210fedcba", "whale.glb"),
-    ("Dolphin",      "abcd1234ef567890abcd1234ef567890", "dolphin.glb"),
-    ("Orca",         "1234abcd5678ef901234abcd5678ef90", "orca.glb"),
-    ("Octopus",      "ef901234abcd5678ef901234abcd5678", "octopus.glb"),
-    ("Manta Ray",    "5678ef901234abcd5678ef901234abcd", "manta_ray.glb"),
-
-    # ── Reptiles ──
-    ("Saltwater Crocodile", "abcdef9876543210abcdef9876543210", "crocodile.glb"),
-    ("Komodo Dragon",       "1234567890abcdef9876543210fedcba", "komodo.glb"),
-    ("Green Sea Turtle",    "fedcba9876543210fedcba9876543210", "turtle.glb"),
-    ("King Cobra",          "0987654321fedcba0987654321fedcba", "snake.glb"),
-
-    # ── Birds ──
-    ("Bald Eagle",   "abcdef0123456789abcdef0123456789", "eagle.glb"),
-    ("Great Horned Owl", "9876543210abcdef9876543210abcdef", "owl.glb"),
-    ("Peacock",      "0123456789fedcba0123456789fedcba", "peacock.glb"),
-    ("Flamingo",     "fedcba0123456789fedcba0123456789", "flamingo.glb"),
-    ("Toucan",       "abcdef9012345678abcdef9012345678", "toucan.glb"),
-
-    # ── Prehistoric ──
-    ("T-Rex",        "6789abcdef012345abcdef0123456789", "trex.glb"),
-    ("Triceratops",  "012345abcdef67890123456789abcdef", "triceratops.glb"),
-    ("Mammoth",      "45678901234abcdef45678901234abcde", "mammoth.glb"),
+    # name              sketchfab_uid                      output_filename
+    ("Lion",            "d2d99a24bc0045d6b09b6ea560a5d761", "lion.glb"),
+    ("African Bush Elephant", "a0f877427dcf492a8dc7bcac4751f0a8", "elephant.glb"),
+    ("Giraffe",         "fbc2566f648d46a8b28624c9cf9fb218", "giraffe.glb"),
+    ("White Tiger",     "9dd099d283e54f99b7cbd40b531b1a29", "tiger.glb"),
+    ("Grizzly Bear",    "df9d941ee11a419db3a007775bdae832", "bear.glb"),
+    ("Grey Wolf",       "6a9f281a9fb344f3a7b8bcab3c6f4c9a", "wolf.glb"),
+    ("Giant Panda",     "76ce633705f04272b30823c428952a6d", "panda.glb"),
+    ("Gorilla",         "e69585d870ce4ae382fd071e87ae3b0e", "gorilla.glb"),
+    ("Zebra",           "bd7258ee007b4e0fb521abb74bfa99d0", "zebra.glb"),
+    ("Realistic Deer",  "76039b75cdc0492a80680c2404725496", "deer.glb"),
+    ("Rabbit Rigged",   "e7213589744d436b9d96e2dbb31198a5", "rabbit.glb"),
+    ("Bald Eagle",      "30434fd1272f464a8540750a78a5087f", "eagle.glb"),
+    ("Owl",             "761067d2fe80480e8b986dd38396ec8c", "owl.glb"),
+    ("Penguin",         "0a89cf636aa7446f895cf367b190133c", "penguin.glb"),
+    ("Crocodile",       "a242e4634a234d3fb909c54b2c39d7b8", "crocodile.glb"),
+    ("Sea Turtle",      "919411e2c4d141d3b981fef7dbb93a6c", "turtle.glb"),
+    ("Snake",           "865916a58ff645118dffc4b94bef72f8", "snake.glb"),
+    ("Realistic Shark", "e913e5092d2341749ff66e4359b1e4a3", "shark.glb"),
+    ("Humpback Whale",  "bb3841769829451394c59386ee9f2ec6", "whale.glb"),
+    ("Octopus",         "330402cc0ade4fc5bb147f3d618e58c3", "octopus.glb"),
+    ("Dolphin",         "c24dc835a6aa4d3c827450513525cdb8", "dolphin.glb"),
+    ("Jellyfish",       "d06a5a553fe641ab92f720527b2278f3", "jellyfish.glb"),
+    ("Monarch Butterfly", "3a5fc9a496cb402297ffdb6700d2ab60", "butterfly.glb"),
+    ("Bee",             "3b1995f874024043b30af93aa7c2820a", "bee.glb"),
+    ("Tyrannosaurus Rex", "ac837b7b80dd48e888d852636a4a19cb", "trex.glb"),
 ]
-
-# ─────────────────────────────────────────────────────────────────────────────
-# SEARCH TERMS — used when --search mode is active
-# ─────────────────────────────────────────────────────────────────────────────
-SEARCH_ANIMALS = [
-    ("Lion",            "lion.glb"),
-    ("Tiger",           "tiger.glb"),
-    ("African Elephant","elephant.glb"),
-    ("Giraffe",         "giraffe.glb"),
-    ("Zebra",           "zebra.glb"),
-    ("Grizzly Bear",    "bear.glb"),
-    ("Gray Wolf",       "wolf.glb"),
-    ("Gorilla",         "gorilla.glb"),
-    ("Giant Panda",     "panda.glb"),
-    ("White-tailed Deer","deer.glb"),
-    ("Great White Shark","shark.glb"),
-    ("Blue Whale",      "whale.glb"),
-    ("Bottlenose Dolphin","dolphin.glb"),
-    ("Orca",            "orca.glb"),
-    ("Giant Octopus",   "octopus.glb"),
-    ("Saltwater Crocodile","crocodile.glb"),
-    ("Sea Turtle",      "turtle.glb"),
-    ("King Cobra",      "snake.glb"),
-    ("Bald Eagle",      "eagle.glb"),
-    ("Great Horned Owl","owl.glb"),
-    ("Flamingo",        "flamingo.glb"),
-    ("Cheetah",         "cheetah.glb"),
-    ("Leopard",         "leopard.glb"),
-    ("Hippo",           "hippo.glb"),
-    ("White Rhinoceros","rhino.glb"),
-    ("Komodo Dragon",   "komodo.glb"),
-    ("Arctic Fox",      "fox.glb"),
-    ("Peacock",         "peacock.glb"),
-    ("Kangaroo",        "kangaroo.glb"),
-    ("Koala",           "koala.glb"),
-    ("Manta Ray",       "manta_ray.glb"),
-    ("Tyrannosaurus Rex","trex.glb"),
-    ("Triceratops",     "triceratops.glb"),
-    ("Woolly Mammoth",  "mammoth.glb"),
-    ("Toucan",          "toucan.glb"),
-    ("Orangutan",       "orangutan.glb"),
-    ("Snow Leopard",    "snow_leopard.glb"),
-    ("Polar Bear",      "polar_bear.glb"),
-    ("Humpback Whale",  "humpback.glb"),
-    ("Hammerhead Shark","hammerhead.glb"),
-]
+# Every UID above was verified by hand: opened on sketchfab.com, confirmed the
+# license is CC-BY, and downloaded through the browser (Sketchfab requires a
+# logged-in free account for the download button to work, API token or not).
+# See ATTRIBUTIONS.md for the required credit line per model.
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -157,39 +92,6 @@ def api_get(path: str, token: str, params: dict = None) -> dict:
     req = urllib.request.Request(url, headers=make_headers(token))
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
         return json.loads(r.read())
-
-
-def search_animal(query: str, token: str, min_faces: int = 50_000) -> dict | None:
-    """
-    Search Sketchfab for a realistic animal model.
-    Filters: downloadable, CC-BY or CC0 license, sorted by like count.
-    Skips low-poly/stylized results by preferring high face-count models.
-    """
-    try:
-        results = api_get("/models", token, {
-            "q":            query,
-            "downloadable": "true",
-            "sort_by":      "-likeCount",
-            "count":        24,
-            "license":      "cc-by",   # CC-BY allows free download with attribution
-        })
-        models = results.get("results", [])
-
-        # Filter out clearly low-poly models: prefer high vertex count & high likes
-        def score(m):
-            likes   = m.get("likeCount", 0)
-            views   = m.get("viewCount", 0)
-            return likes * 10 + views
-
-        models.sort(key=score, reverse=True)
-
-        # Return first downloadable result
-        for m in models:
-            if m.get("isDownloadable"):
-                return m
-    except Exception as e:
-        print(f"    Search error: {e}")
-    return None
 
 
 def get_download_url(uid: str, token: str) -> str | None:
@@ -276,70 +178,18 @@ def verify_token(token: str) -> bool:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MODES
+# MODE
 # ─────────────────────────────────────────────────────────────────────────────
 
-def run_search_mode(token: str):
-    """Search Sketchfab live for the best realistic model per animal."""
+def run_curated_mode(token: str):
+    """Download every model in CURATED_MODELS by its verified Sketchfab UID."""
     print(f"\n{'─'*62}")
-    print(f"  SEARCH MODE — finding best realistic model per animal")
+    print(f"  {len(CURATED_MODELS)} hand-picked, license-verified realistic models")
     print(f"{'─'*62}")
 
     ok = fail = 0
-    for query, filename in SEARCH_ANIMALS:
-        dest = OUTPUT_DIR / filename
-        if dest.exists() and dest.stat().st_size > 10_000:
-            print(f"  ✓  {query:<30} already downloaded")
-            ok += 1
-            continue
-
-        print(f"  🔍 {query:<30}", end="", flush=True)
-        model = search_animal(query, token)
-        if not model:
-            print(f"\r  ✗  {query:<30} no results")
-            fail += 1
-            time.sleep(0.5)
-            continue
-
-        uid  = model["uid"]
-        name = model["name"][:40]
-        likes = model.get("likeCount", 0)
-        print(f"\r  🔍 {query:<30} → '{name}' ({likes} ♥)", flush=True)
-
-        dl_url = get_download_url(uid, token)
-        if dl_url:
-            if download_glb(dl_url, dest, query):
-                ok += 1
-            else:
-                fail += 1
-        else:
-            print(f"     ✗ Could not get download URL")
-            fail += 1
-
-        time.sleep(1.0)   # respectful rate limiting
-
-    return ok, fail
-
-
-def run_curated_mode(token: str):
-    """Download from the hand-curated list of known good model UIDs."""
-    print(f"\n{'─'*62}")
-    print(f"  CURATED MODE — {len(CURATED_MODELS)} hand-picked realistic models")
-    print(f"{'─'*62}")
-    print("  Note: Replace UIDs in CURATED_MODELS with real ones from sketchfab.com")
-    print("        Find a model → copy the UID from its URL → paste above\n")
-
-    ok = fail = skip = 0
-    placeholder = set()
-
     for name, uid, filename in CURATED_MODELS:
         dest = OUTPUT_DIR / filename
-
-        # Detect placeholder UIDs (sequential hex patterns)
-        if len(set(uid.replace("-","a"))) < 5:
-            placeholder.add(name)
-            skip += 1
-            continue
 
         if dest.exists() and dest.stat().st_size > 10_000:
             print(f"  ✓  {name:<30} already downloaded")
@@ -355,10 +205,6 @@ def run_curated_mode(token: str):
         else:
             fail += 1
         time.sleep(0.8)
-
-    if placeholder:
-        print(f"\n  ℹ  {len(placeholder)} entries still have placeholder UIDs.")
-        print(f"     Update CURATED_MODELS in this script with real Sketchfab UIDs.")
 
     return ok, fail
 
@@ -393,12 +239,8 @@ SETUP_GUIDE = """
 """
 
 def main():
-    mode = "search"   # "search" = live API search | "curated" = use UIDs above
-    if "--curated" in sys.argv:
-        mode = "curated"
-
     print("═" * 62)
-    print("  🦁  Animal Model Downloader  v3.0  (Realistic Quality)")
+    print("  🦁  Animal Model Downloader  v4.0  (Realistic Quality)")
     print(f"  Output: {OUTPUT_DIR.resolve()}")
     print("═" * 62)
 
@@ -413,11 +255,7 @@ def main():
     if not verify_token(token):
         sys.exit(1)
 
-    # Run selected mode
-    if mode == "search":
-        ok, fail = run_search_mode(token)
-    else:
-        ok, fail = run_curated_mode(token)
+    ok, fail = run_curated_mode(token)
 
     # Summary
     files = list(OUTPUT_DIR.glob("*.glb"))
